@@ -1,43 +1,205 @@
 <template>
-  <div class="hello">
-    <h1>{{ msg }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-router" target="_blank" rel="noopener">router</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-vuex" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint" target="_blank" rel="noopener">eslint</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
+  <div>
+    <div class="container">
+      <button class="button" @click="onClickSearch">검색</button>
+      <button class="button" @click="onClickAdd">행 추가</button>
+      <button class="button" @click="onClickAddValue">행 추가(값 추가)</button>
+      <button class="button" @click="btnRemoveRow">행 삭제(커서)</button>
+      <button class="button" @click="btnCheckInRow">체크박스 선택된 아이템 삭제</button>
+    </div>
+    <div ref="realgrid" style="width: 100%; height: 500px"></div>
   </div>
 </template>
 
 <script>
+/* eslint-disable */
+import {
+  ref, computed, getCurrentInstance, onMounted, onUnmounted, reactive, toRefs
+} from 'vue'
+import axios from "axios";
 export default {
   name: 'HelloWorld',
   props: {
-    msg: String
-  }
+    msg: {
+      type: String
+    }
+  },
+  setup(props, context) {
+    const realgrid = ref(null);
+    const vm = getCurrentInstance();
+    const state = reactive({
+      dropdown: [
+      ],
+    });
+
+    for (let iCnt = 0; iCnt < 11; iCnt++) {
+      for (let jCnt = 0; jCnt < 5; jCnt++) {
+        state.dropdown.push({
+          value: `v${iCnt}${jCnt}`,
+          label: `l${iCnt}${jCnt}`,
+          group: `${iCnt}`
+        })
+      }
+    }
+
+    let dataProvider, gridView;
+    const realGridInit = () => {
+      dataProvider = new RealGrid.LocalDataProvider();
+      gridView = new RealGrid.GridView(realgrid.value);
+      gridView.setDataSource(dataProvider);
+
+      dataProvider.setFields([
+        {fieldName: 'address'},
+        {fieldName: 'alphanumeric'},
+        {fieldName: 'country'},
+        {fieldName: 'currency'},
+        {fieldName: 'email'},
+        {fieldName: 'id'},
+        {fieldName: 'name'},
+        {fieldName: 'numberrange'},
+        {fieldName: 'phone'},
+        {fieldName: 'postalZip'},
+        {fieldName: 'region'},
+        {fieldName: 'text'},
+        {fieldName: 'items'},
+      ]);
+``
+      gridView.setColumns([
+        {name: 'address', fieldName: 'address', 'header': {'text': '주소'}},
+        {name: 'alphanumeric', fieldName: 'alphanumeric' , 'header': {'text': '영문숫자'}},
+        {name: 'country', fieldName: 'country' , 'header': {'text': '국가'}},
+        {name: 'currency', fieldName: 'currency' , 'header': {'text': '재산'}},
+        {name: 'email', fieldName: 'email' , 'header': {'text': '이메일'}},
+        {name: 'id', fieldName: 'id' , 'header': {'text': 'id'}},
+        {name: 'list', fieldName: 'list' , 'header': {'text': '항목들'}},
+        {name: 'name', fieldName: 'name' , 'header': {'text': '이름'}},
+        {name: 'numberrange', fieldName: 'numberrange' , 'header': {'text': '숫자'}},
+        {name: 'phone', fieldName: 'phone' , 'header': {'text': '휴대번호'}},
+        {name: 'postalZip', fieldName: 'postalZip' , 'header': {'text': '우편번호'}},
+        {name: 'region', fieldName: 'region' , 'header': {'text': '지역'}},
+        {name: 'text', fieldName: 'text' , 'header': {'text': '비고'}},
+        {
+          name: 'items',
+          fieldName: 'items',
+          header: {
+            text: ''
+          },
+          renderer: {
+            type: 'html',
+            callback: function (grid, cell, w, h) {
+              const index = grid.getValue(cell.item.dataRow, 'numberrange');
+              const items = state.dropdown.reduce((acc, cur) => {
+                acc = acc ?? [];
+                if (cur.group === index) {
+                  acc.push(`<option value="${cur.value}">${cur.label}</option>`);
+                }
+                return acc;
+              }, []);
+
+              return `<select ref="target${cell.item.dataRow}">${items.join('\n')}</select>`;
+            }
+          }
+        },
+      ]);
+
+      gridView.setColumnLayout([
+        {
+          name: 'gridLayout1',
+          items:[
+            'postalZip',
+            'address',
+            'country',
+          ],
+          header: {
+            text: '주소'
+          },
+        },
+        {
+          name: 'gridLayout2',
+          items:[
+            'name',
+            'phone',
+            'alphanumeric',
+            'currency',
+            'email',
+            'id',
+            'list',
+            'numberrange',
+            'region',
+          ],
+          header: {
+            text: '개인정보'
+          },
+        },
+        'text',
+        'items'
+      ]);
+
+      gridView.columnByName('id').visible = false; // * 특정 컬럼 숨기기
+
+      gridView.setHeader({ // * 헤더 높이 설정
+        height: gridView.getHeader().height + 30
+      });
+
+      gridView.setDisplayOptions({ // * 컬럼 너비 자동 조정
+        fitStyle: 'even'
+      });
+
+      gridView.setStateBar({ visible: false }); // * 상태바 표시 여부
+      gridView.setCheckBar({ visible: true }); // & 체크 표시 여부
+      gridView.setEditOptions({
+        editable: true,
+        insertable: true,
+      }); // * 그리드 수정 모드 설정
+      gridView.onEditCommit = (grid, index, oldValue, newValue) => {
+        console.log('onEditCommit', grid, index, oldValue, newValue);
+      }
+    };
+
+    const onClickSearch = async () => {
+      try {
+        const res = await axios.post('/api/selectUsers', {});
+        dataProvider.setRows(res?.data?.userList);
+        console.log("res", res?.data?.userList);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    const onClickAdd = () => {
+      const rowIndex = gridView.getCurrent().dataRow;
+      dataProvider.insertRow(rowIndex === -1 ? 0 : rowIndex, {});
+    };
+
+    const onClickAddValue = () => {
+      const rowIndex = gridView.getCurrent().dataRow;
+      dataProvider.insertRow(rowIndex === -1 ? 0 : rowIndex, {name: '새 이름'})
+    }
+
+    const btnRemoveRow = () => {
+      let rowIndex = gridView.getCurrent().dataRow;
+      return rowIndex === -1 ? '' : dataProvider.removeRow(rowIndex);
+    }
+
+    const btnCheckInRow = () => {
+      console.log('btnCheckInRow', dataProvider.getCheckedRows());
+    };
+
+    onMounted(() => {
+      realGridInit();
+    });
+
+    return {
+      ...toRefs(state),
+      onClickSearch,
+      onClickAdd,
+      onClickAddValue,
+      btnRemoveRow,
+      btnCheckInRow,
+      realGridInit,
+      realgrid,
+    }
+  },
 }
 </script>
 
@@ -56,5 +218,22 @@ li {
 }
 a {
   color: #42b983;
+}
+
+.button {
+  background-color: #c2c2c2; /* Green */
+  border: none;
+  color: #000000;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 20px;
+  margin-right: 5px;
+  margin-bottom: 3px;
+}
+.container {
+  display: flex;
+  flex-direction: row;
 }
 </style>
