@@ -4,41 +4,39 @@
       <h3>{{ item.name }}</h3>
       <div class="container">
         <button class="button" @click="onExcelDownload(index)">엑셀다운로드</button>
-        <button class="button" @click="onMultiExcelDownload">멀티 다운로드 엑셀다운로드</button>
         <button class="button" @click="onAllMultiExcelDownload">전체 사업장 엑셀다운로드</button>
       </div>
-      <div ref="item" style="width: 100%; height: 500px"></div>
+      <div :ref="el => {divs[index]  = el}" style="width: 100%; height: 500px"></div>
     </div>
   </div>
 </template>
 
 <script>
 /* eslint-disable */
-import axios from "axios";
+
+import {onBeforeUpdate, onMounted, ref} from "vue";
 
 export default {
   name: "MultiGridComponent",
   props: {
     items: Array
   },
-  data() {
-    return {
-      currentItems: [],
-    }
-  },
-  watch: {
-  },
-  methods: {
-    onExcelDownload(index) {
+  setup(props, context) {
+    const divs = ref([]);
+
+    let _grids = [];
+    const onExcelDownload = (index) => {
       console.log('onExcelDownload', index);
 
-      const self = this;
-      const gridViewId = 'gridView_' + index;
+      const currentGrid = _grids.filter(v => v.index === index);
+      if (currentGrid === null || currentGrid === undefined || currentGrid.length === 0) {
+        return;
+      }
 
-      self[gridViewId].columnByName('gender').mergeRule = {};
-      self[gridViewId].columnByName('korCountry').mergeRule = {};
+      currentGrid[0].gridViewId.columnByName('gender').mergeRule = {};
+      currentGrid[0].gridViewId.columnByName('korCountry').mergeRule = {};
 
-      self[gridViewId].exportGrid({
+      currentGrid[0].gridViewId.exportGrid({
         type: "excel",
         target: "local",
         fileName: `gridExportSample_${index}.xlsx`,
@@ -48,47 +46,15 @@ export default {
         }
       });
 
-      self[gridViewId].columnByName('gender').mergeRule = {
+      currentGrid[0].gridViewId.columnByName('gender').mergeRule = {
         criteria: 'value'
       };
-      self[gridViewId].columnByName('korCountry').mergeRule = {
+      currentGrid[0].gridViewId.columnByName('korCountry').mergeRule = {
         criteria: 'values["gender"] + value'
       };
-    },
-    onMultiExcelDownload(index) {
-      const self = this;
-      RealGrid.exportGrid({
-        type: 'excel',
-        target: 'local',
-        fileName: '사업장들.xlsx',
-        progressMessage: "엑셀 Export중입니다.",
-        separateRows: true,
-        done: function () {
-          alert(`엑셀다운로드가 완료되었습니다.`);
-        },
-        exportGrids: [
-          {
-            grid: self['gridView_' + 0],
-            sheetName: "사업장0"
-          },
-          {
-            grid: self['gridView_' + 1],
-            sheetName: "사업장1"
-          },
-        ],
-      })
-    },
-    onAllMultiExcelDownload() {
-      const self = this;
+    };
 
-      let iCnt = this.items.length - 1, grids = [];
-      for (; iCnt >= 0; iCnt--) {
-        grids.push({
-          grid: self['gridView_' + iCnt],
-          sheetName: `사업장 ${iCnt},`
-        });
-      }
-
+    const onAllMultiExcelDownload = () => {
       RealGrid.exportGrid({
         type: 'excel',
         target: 'local',
@@ -97,19 +63,21 @@ export default {
         done: function () {
           alert(`엑셀다운로드가 완료되었습니다.`);
         },
-        exportGrids: grids,
+        exportGrids: _grids.map((v, index) => {
+          return {
+            grid: v.gridViewId,
+            sheetName: `사업장 ${index}`
+          }
+        }),
       })
-    },
-    gridInit(divId, iCnt) {
-      const self = this;
-      const dataProviderId = 'dataProvider_' + iCnt;
-      const gridViewId = 'gridView_' + iCnt;
+    };
 
-      self[dataProviderId] = new RealGrid.LocalDataProvider();
-      self[gridViewId] = new RealGrid.GridView(divId);
-      self[gridViewId].setDataSource(self[dataProviderId]);
+    const gridInit = (divId, index) => {
+      const dataProviderId = new RealGrid.LocalDataProvider();
+      const gridViewId = new RealGrid.GridView(divId);
+      gridViewId.setDataSource(dataProviderId);
 
-      self[dataProviderId].setFields([
+      dataProviderId.setFields([
         { fieldName:'age', dataType: 'number' },
         { fieldName:'cardNumber', dataType: 'text' },
         { fieldName:'currentSave', dataType: 'text' },
@@ -130,7 +98,7 @@ export default {
         { fieldName:'year', dataType: 'number' },
       ]);
 
-      self[gridViewId].setColumns([
+      gridViewId.setColumns([
         { name: 'age', fieldName: 'age', width: 100, header: { text: '나이' }, },
         { name: 'cardNumber', fieldName: 'cardNumber', width: 100, header: { text: '' }, },
         { name: 'currentSave', fieldName: 'currentSave', width: 100, header: { text: '현재잔액' }, },
@@ -173,28 +141,44 @@ export default {
         { name: 'year', fieldName: 'year', width: 100, header: { text: '' }, },
       ]);
 
-      self[gridViewId].columnByName("month").numberFormat = "#,##0.##;,;.;f"; // 소수점 자동 반올림 막기
-      self[gridViewId].displayOptions.emptyMessage = "표시할 데이타가 없습니다.";
-      self[gridViewId].displayOptions.rowHeight = 20;
-      self[gridViewId].header.height = 32;
-      self[gridViewId].footer.height = 32;
-      self[gridViewId].stateBar.width = 16;
-      self[gridViewId].editOptions.insertable = false;
-      self[gridViewId].editOptions.appendable = false;
-      self[gridViewId].setDisplayOptions({ // * 컬럼 너비 자동 조정
+      gridViewId.columnByName("month").numberFormat = "#,##0.##;,;.;f"; // 소수점 자동 반올림 막기
+      gridViewId.displayOptions.emptyMessage = "표시할 데이타가 없습니다.";
+      gridViewId.displayOptions.rowHeight = 20;
+      gridViewId.header.height = 32;
+      gridViewId.footer.height = 32;
+      gridViewId.stateBar.width = 16;
+      gridViewId.editOptions.insertable = false;
+      gridViewId.editOptions.appendable = false;
+      gridViewId.setDisplayOptions({ // * 컬럼 너비 자동 조정
         fitStyle: 'even'
       });
-      self[gridViewId].setStateBar({ visible: false }); // * 상태바 표시 여부
-      self[gridViewId].setCheckBar({ visible: true }); // & 체크 표시 여부
+      gridViewId.setStateBar({ visible: false }); // * 상태바 표시 여부
+      gridViewId.setCheckBar({ visible: true }); // & 체크 표시 여부
+      dataProviderId.setRows(props?.items[index].list);
 
-      self[dataProviderId].setRows(this?.items[iCnt].list);
-    },
+      _grids.push({
+        index: index,
+        dataProviderId,
+        gridViewId,
+      });
+    };
+
+    onMounted(() => {
+      for (let iCnt = 0, length = divs.value.length; iCnt < length; iCnt++) {
+        gridInit(divs.value[iCnt], iCnt);
+      }
+    });
+
+    onBeforeUpdate(() => {
+      divs.value = [];
+    });
+
+    return {
+      onExcelDownload,
+      onAllMultiExcelDownload,
+      divs,
+    };
   },
-  mounted() {
-    for (let iCnt = 0, length = this?.$refs?.item?.length; iCnt < length; iCnt++) {
-      this.gridInit(this?.$refs?.item[iCnt], iCnt);
-    }
-  }
 }
 </script>
 
@@ -203,7 +187,7 @@ export default {
   background-color: #c2c2c2; /* Green */
   border: none;
   color: #000000;
-  padding: 15px 32px;
+  padding: 11px 11px;
   text-align: center;
   text-decoration: none;
   display: inline-block;

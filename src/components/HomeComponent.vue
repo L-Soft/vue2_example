@@ -13,12 +13,11 @@
 
 <script>
 /* eslint-disable */
-import {
-  ref, computed, getCurrentInstance, onMounted, onUnmounted, reactive, toRefs
-} from 'vue'
+import {getCurrentInstance, onMounted, reactive, ref, toRefs} from 'vue'
 import axios from "axios";
+
 export default {
-  name: 'HelloWorld',
+  name: 'HomeComponent',
   props: {
     msg: {
       type: String
@@ -27,20 +26,6 @@ export default {
   setup(props, context) {
     const realgrid = ref(null);
     const vm = getCurrentInstance();
-    const state = reactive({
-      dropdown: [
-      ],
-    });
-
-    for (let iCnt = 0; iCnt < 11; iCnt++) {
-      for (let jCnt = 0; jCnt < 5; jCnt++) {
-        state.dropdown.push({
-          value: `v${iCnt}${jCnt}`,
-          label: `l${iCnt}${jCnt}`,
-          group: `${iCnt}`
-        })
-      }
-    }
 
     let dataProvider, gridView;
     const realGridInit = () => {
@@ -78,28 +63,6 @@ export default {
         {name: 'postalZip', fieldName: 'postalZip' , 'header': {'text': '우편번호'}},
         {name: 'region', fieldName: 'region' , 'header': {'text': '지역'}},
         {name: 'text', fieldName: 'text' , 'header': {'text': '비고'}},
-        {
-          name: 'items',
-          fieldName: 'items',
-          header: {
-            text: ''
-          },
-          renderer: {
-            type: 'html',
-            callback: function (grid, cell, w, h) {
-              const index = grid.getValue(cell.item.dataRow, 'numberrange');
-              const items = state.dropdown.reduce((acc, cur) => {
-                acc = acc ?? [];
-                if (cur.group === index) {
-                  acc.push(`<option value="${cur.value}">${cur.label}</option>`);
-                }
-                return acc;
-              }, []);
-
-              return `<select ref="target${cell.item.dataRow}">${items.join('\n')}</select>`;
-            }
-          }
-        },
       ]);
 
       gridView.setColumnLayout([
@@ -132,7 +95,6 @@ export default {
           },
         },
         'text',
-        'items'
       ]);
 
       gridView.columnByName('id').visible = false; // * 특정 컬럼 숨기기
@@ -190,7 +152,6 @@ export default {
     });
 
     return {
-      ...toRefs(state),
       onClickSearch,
       onClickAdd,
       onClickAddValue,
@@ -224,11 +185,11 @@ a {
   background-color: #c2c2c2; /* Green */
   border: none;
   color: #000000;
-  padding: 15px 32px;
+  padding: 11px 11px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  font-size: 20px;
+  font-size: 18px;
   margin-right: 5px;
   margin-bottom: 3px;
 }
