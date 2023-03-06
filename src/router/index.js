@@ -28,6 +28,11 @@ const routes = [
     name: 'dynamicGrid',
     component: () => import('../views/DynamicGridView.vue'),
   },
+  {
+    path: '/dynamicView',
+    name: 'dynamicView',
+    component: () => import('../views/DynamicView.vue'),
+  },
 ]
 
 const router = new VueRouter({

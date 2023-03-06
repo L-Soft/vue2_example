@@ -4,7 +4,8 @@
       <router-link to="/">Home</router-link> |
       <router-link to="/process">프로세스 바</router-link> |
       <router-link to="/multiGrid">멀티 그리드 생성</router-link> |
-      <router-link to="/dynamicGrid">동적 컬럼 생성 그리드</router-link>
+      <router-link to="/dynamicGrid">동적 컬럼 생성 그리드</router-link> |
+      <router-link to="/dynamicView">동적 컴포넌트</router-link> |
     </nav>
     <router-view/>
   </div>
